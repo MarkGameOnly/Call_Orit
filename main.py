@@ -86,18 +86,25 @@ async def setup_bot_commands():
             BotCommand(command="buy", description="Оплатить подписку"),
             BotCommand(command="admin", description="Админ-панель"),
             BotCommand(command="broadcast", description="Рассылка от администратора"),
-            BotCommand(command="iqtest", description="Пройти IQ Тест") # Добавлена новая команда
+            BotCommand(command="iqtest", description="Пройти IQ Тест")
         ])
         logger.info("Команды бота успешно установлены.")
     except Exception as e:
         logger.error(f"Ошибка установки команд бота: {e}")
 
+# === FastAPI Startup Event ===
+@app.on_event("startup")
+async def startup_event():
+    """Выполняется при запуске FastAPI приложения."""
+    init_db() # Инициализируем базу данных
+    await setup_bot_commands() # Устанавливаем команды бота
+    logger.info("FastAPI startup events completed.")
+
 # === Состояния FSM (Finite State Machine) ===
-# Используются для управления потоком диалога с пользователем
 class GenStates(StatesGroup):
     """Определяет состояния для FSM."""
-    await_photo = State() # Состояние ожидания фотографии от пользователя
-    await_broadcast = State() # Состояние ожидания текста для рассылки от администратора
+    await_photo = State()
+    await_broadcast = State()
 
 # === Главное меню ===
 def main_menu():
@@ -106,7 +113,7 @@ def main_menu():
         [KeyboardButton(text="🍱 Узнать калории по фото")],
         [KeyboardButton(text="📸 Сделать фото"), KeyboardButton(text="🏋️ Программы тренировок")],
         [KeyboardButton(text="📚 Как пользоваться?"), KeyboardButton(text="💳 Оплата подписки")],
-        [KeyboardButton(text="👤 Профиль"), KeyboardButton(text="🧠 IQ Тест")] # Добавлена новая кнопка
+        [KeyboardButton(text="👤 Профиль"), KeyboardButton(text="🧠 IQ Тест")]
     ]
     return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
 
@@ -505,14 +512,14 @@ async def telegram_webhook(req: Request):
 # Этот блок кода будет выполняться только при прямом запуске файла (например, python main.py)
 # и не будет активен при развертывании через FastAPI/webhook.
 if __name__ == "__main__":
-    init_db() # Инициализируем базу данных при запуске
+    # Для локального polling-режима, чтобы init_db и setup_bot_commands тоже выполнялись
+    init_db()
+    asyncio.run(setup_bot_commands())
     
     async def main():
         """Основная функция для запуска бота в режиме polling."""
         logger.info("Запуск бота в режиме polling...")
-        await setup_bot_commands() # Устанавливаем команды бота
         await dp.start_polling(bot) # Запускаем polling
         logger.info("Бот остановлен.")
 
-    # Запускаем асинхронную функцию main
     asyncio.run(main())
