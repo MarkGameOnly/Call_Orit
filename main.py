@@ -53,7 +53,10 @@ session = AiohttpSession()
 bot = Bot(token=BOT_TOKEN, session=session)
 dp = Dispatcher(storage=MemoryStorage())
 app = FastAPI()
-openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+
+# Инициализация OpenAI клиента с увеличенным таймаутом (например, 60 секунд)
+# Значение по умолчанию может быть 10 секунд, что часто недостаточно для больших изображений
+openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY, timeout=60.0) 
 
 # === База данных ===
 # Подключаемся к базе данных SQLite. check_same_thread=False нужен для работы с FastAPI.
